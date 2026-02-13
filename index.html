@@ -6,33 +6,24 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <style>
-        /* 2. The CSS Fix: Prevents the camera from stretching/zooming */
         body { margin: 0; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        video { width: 100vw !important; height: 100vh !important; object-fit: cover !important; }
         
-        /* Force the webcam video to fit the screen properly */
-        video { 
-            width: 100vw !important; 
-            height: 100vh !important; 
-            object-fit: cover !important; 
-            margin-left: 0 !important; 
-            top: 0 !important;
-        }
-
         #msg-box {
-            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-            padding: 12px; background: rgba(0,0,0,0.8); color: #00ff00;
-            border-radius: 10px; font-family: sans-serif; z-index: 10000;
-            width: 80%; text-align: center; pointer-events: none;
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            padding: 15px; background: rgba(0,0,0,0.85); color: #00ff00;
+            border-radius: 12px; font-family: sans-serif; z-index: 10000;
+            width: 80%; text-align: center; border: 1px solid #00ff00;
         }
         #start-btn {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            padding: 20px; background: #007bff; color: white; border-radius: 10px;
-            z-index: 10001; border: none; font-weight: bold;
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            padding: 20px 40px; background: #28a745; color: white; border-radius: 50px;
+            z-index: 10001; border: none; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
     </style>
 
     <script>
-        // SHADER: Transparent Video (Green Screen)
+        // SHADER: The Chroma Key logic
         AFRAME.registerShader('transparent-video', {
             schema: {
                 src: {type: 'map'},
@@ -63,32 +54,38 @@
             tick: function() { if (this.texture) this.texture.needsUpdate = true; }
         });
 
-        let captured = false;
+        let isCaptured = false;
+
         AFRAME.registerComponent('hiro-logic', {
             init: function() {
                 const msg = document.querySelector('#msg-box');
                 const video = document.querySelector('#gs-video');
                 const scene = this.el.sceneEl;
 
+                // Detect Hiro Marker
                 this.el.addEventListener('markerFound', () => {
-                    if(!captured) {
-                        captured = true;
-                        msg.innerHTML = "CLONING DONE! <br> Tap the ground to spawn.";
+                    if(!isCaptured) {
+                        isCaptured = true;
+                        msg.innerHTML = "VIDEO CAPTURED! <br> Point at the floor and TAP to spawn.";
                         video.play();
                     }
                 });
 
+                // Spawn on Tap
                 scene.addEventListener('click', (evt) => {
-                    if(captured && evt.detail.intersection) {
-                        const newElement = document.createElement('a-plane');
-                        const touchPos = evt.detail.intersection.point;
-                        newElement.setAttribute('position', touchPos);
-                        newElement.setAttribute('rotation', '0 0 0');
-                        newElement.setAttribute('material', 'shader: transparent-video; src: #gs-video; threshold: 0.6');
-                        newElement.setAttribute('width', '1');
-                        newElement.setAttribute('height', '1.77');
-                        scene.appendChild(newElement);
-                        msg.innerText = "Spawned!";
+                    if(isCaptured && evt.detail.intersection) {
+                        const newClone = document.createElement('a-plane');
+                        const pos = evt.detail.intersection.point;
+                        
+                        // We set it to stand vertically at the tap point
+                        newClone.setAttribute('position', {x: pos.x, y: pos.y + 0.8, z: pos.z});
+                        newClone.setAttribute('rotation', '0 0 0');
+                        newClone.setAttribute('material', 'shader: transparent-video; src: #gs-video; threshold: 0.6');
+                        newClone.setAttribute('width', '1');
+                        newClone.setAttribute('height', '1.77');
+                        
+                        scene.appendChild(newClone);
+                        msg.innerText = "Spawn successful!";
                     }
                 });
             }
@@ -96,32 +93,28 @@
     </script>
 </head>
 
-<body style="margin: 0; overflow: hidden;">
-    <button id="start-btn" onclick="this.style.display='none'; document.querySelector('#gs-video').play();">START EXPERIENCE</button>
-    <div id="msg-box">Step 1: Scan the HIRO Marker</div>
+<body>
+    <button id="start-btn" onclick="this.style.display='none'; document.querySelector('#gs-video').play();">ACTIVATE AR</button>
+    <div id="msg-box">Step 1: Focus on the HIRO Marker</div>
 
     <a-scene 
         embedded 
-        arjs="sourceType: webcam; 
-              sourceWidth: 640; sourceHeight: 480; 
-              displayWidth: 640; displayHeight: 480; 
-              debugUIEnabled: false;
-              videoTexture: true;"
+        arjs="sourceType: webcam; sourceWidth: 640; sourceHeight: 480; displayWidth: 640; displayHeight: 480; debugUIEnabled: false; videoTexture: true;"
         cursor="rayOrigin: mouse"
-        raycaster="objects: .clickable"
+        raycaster="objects: .surface"
         vr-mode-ui="enabled: false">
 
         <a-assets>
-            <video id="gs-video" src="video.mp4" loop="true" crossorigin="anonymous" playsinline></video>
+            <video id="gs-video" src="video.mp4" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
         </a-assets>
 
         <a-marker preset="hiro" hiro-logic>
             <a-plane material="shader: transparent-video; src: #gs-video" rotation="-90 0 0" width="1" height="1.77"></a-plane>
         </a-marker>
 
-        <a-plane class="clickable" 
+        <a-plane class="surface" 
                  rotation="-90 0 0" 
-                 position="0 -2 -5" 
+                 position="0 -1.5 -5" 
                  width="100" height="100" 
                  material="opacity: 0.0; transparent: true">
         </a-plane>
@@ -130,5 +123,5 @@
     </a-scene>
 </body>
 </html>
-</html>
+
 
