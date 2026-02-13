@@ -1,18 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <style>
-        /* Fixes the white bars and sizing issues */
-        body { margin: 0; overflow: hidden; }
+        /* 2. The CSS Fix: Prevents the camera from stretching/zooming */
+        body { margin: 0; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        
+        /* Force the webcam video to fit the screen properly */
+        video { 
+            width: 100vw !important; 
+            height: 100vh !important; 
+            object-fit: cover !important; 
+            margin-left: 0 !important; 
+            top: 0 !important;
+        }
+
         #msg-box {
             position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
             padding: 12px; background: rgba(0,0,0,0.8); color: #00ff00;
             border-radius: 10px; font-family: sans-serif; z-index: 10000;
-            width: 70%; text-align: center;
+            width: 80%; text-align: center; pointer-events: none;
         }
         #start-btn {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -22,7 +32,7 @@
     </style>
 
     <script>
-        // SHADER: Transparent Video
+        // SHADER: Transparent Video (Green Screen)
         AFRAME.registerShader('transparent-video', {
             schema: {
                 src: {type: 'map'},
@@ -54,7 +64,6 @@
         });
 
         let captured = false;
-
         AFRAME.registerComponent('hiro-logic', {
             init: function() {
                 const msg = document.querySelector('#msg-box');
@@ -73,13 +82,11 @@
                     if(captured && evt.detail.intersection) {
                         const newElement = document.createElement('a-plane');
                         const touchPos = evt.detail.intersection.point;
-                        
                         newElement.setAttribute('position', touchPos);
                         newElement.setAttribute('rotation', '0 0 0');
                         newElement.setAttribute('material', 'shader: transparent-video; src: #gs-video; threshold: 0.6');
                         newElement.setAttribute('width', '1');
                         newElement.setAttribute('height', '1.77');
-                        
                         scene.appendChild(newElement);
                         msg.innerText = "Spawned!";
                     }
@@ -95,7 +102,11 @@
 
     <a-scene 
         embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; displayWidth: 1280; displayHeight: 720; videoTexture: true;"
+        arjs="sourceType: webcam; 
+              sourceWidth: 640; sourceHeight: 480; 
+              displayWidth: 640; displayHeight: 480; 
+              debugUIEnabled: false;
+              videoTexture: true;"
         cursor="rayOrigin: mouse"
         raycaster="objects: .clickable"
         vr-mode-ui="enabled: false">
@@ -111,7 +122,7 @@
         <a-plane class="clickable" 
                  rotation="-90 0 0" 
                  position="0 -2 -5" 
-                 width="50" height="50" 
+                 width="100" height="100" 
                  material="opacity: 0.0; transparent: true">
         </a-plane>
 
@@ -119,3 +130,5 @@
     </a-scene>
 </body>
 </html>
+</html>
+
